@@ -1,0 +1,54 @@
+name: CI — ndn-dashboard
+
+# Cross-repo deps are { git, tag } (ndn-rs / ndn-ext / ndn-fwd), so no sibling
+# checkout is needed — cargo fetches them from GitHub.
+
+on:
+  push:
+    branches: [main]
+    paths: ["crates/**", "Cargo.toml", ".github/workflows/ci.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["crates/**", "Cargo.toml", ".github/workflows/ci.yml"]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+
+jobs:
+  core:
+    name: dashboard (build / clippy / test) + guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: rustfmt, clippy }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-dashboard-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-cargo-dashboard-
+      - name: Install system dependencies (Dioxus desktop / WebKit2GTK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev libxdo-dev libssl-dev pkg-config
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Lint
+        run: cargo clippy -- -D warnings
+      - name: Test
+        run: cargo test
+      - name: Glossary is exhaustive (EduGloss guard)
+        run: cargo run -q -p dash-glossary -- check .
+      - name: Zero authored JavaScript
+        run: |
+          set -e
+          hits=$(grep -RIn 'document::eval' crates/ndn-dashboard/src \
+            | grep -v '^[^:]*:[0-9]*:\s*//' || true)
+          if [ -n "$hits" ]; then echo "document::eval found:"; echo "$hits"; exit 1; fi
