@@ -22,23 +22,23 @@ name = "ndn-rs"
 
 [workspace.dependencies]
 # NDN workspace crates — grouped by subdirectory layer
-ndn-tlv       = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1", default-features = false }
-ndn-packet    = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1", default-features = false }
-ndn-mgmt-wire = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-transport = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-runtime   = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-face-webble       = { git = "https://github.com/Quarmire/ndn-ext", tag = "v0.1.0-alpha.1" }
-ndn-security  = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-engine    = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-app       = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-ipc       = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-config    = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-cert     = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-identity = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-mgmt     = { git = "https://github.com/Quarmire/ndn-rs", tag = "v0.1.0-alpha.1" }
-ndn-coding    = { git = "https://github.com/Quarmire/ndn-ext", tag = "v0.1.0-alpha.1" }
-ndn-ratelimit = { git = "https://github.com/Quarmire/ndn-ext", tag = "v0.1.0-alpha.1" }
-ndn-tools-core = { git = "https://github.com/Quarmire/ndn-fwd", tag = "v0.1.0-alpha.1" }
+ndn-tlv       = { path = "../ndn-rs/crates/core/ndn-tlv", default-features = false }
+ndn-packet    = { path = "../ndn-rs/crates/core/ndn-packet", default-features = false }
+ndn-mgmt-wire = { path = "../ndn-rs/crates/core/ndn-mgmt-wire" }
+ndn-transport = { path = "../ndn-rs/crates/core/ndn-transport" }
+ndn-runtime   = { path = "../ndn-rs/crates/core/ndn-runtime" }
+ndn-face-webble       = { path = "../ndn-ext/crates/faces/ndn-face-webble" }
+ndn-security  = { path = "../ndn-rs/crates/security/ndn-security" }
+ndn-engine    = { path = "../ndn-rs/crates/forwarding/ndn-engine" }
+ndn-app       = { path = "../ndn-rs/crates/app/ndn-app" }
+ndn-ipc       = { path = "../ndn-rs/crates/forwarding/ndn-ipc" }
+ndn-config    = { path = "../ndn-rs/crates/platform/ndn-config" }
+ndn-cert     = { path = "../ndn-rs/crates/security/ndn-cert" }
+ndn-identity = { path = "../ndn-rs/crates/security/ndn-identity" }
+ndn-mgmt     = { path = "../ndn-rs/crates/forwarding/ndn-mgmt" }
+ndn-coding    = { path = "../ndn-ext/crates/coding/ndn-coding" }
+ndn-ratelimit = { path = "../ndn-ext/crates/ratelimit/ndn-ratelimit" }
+ndn-tools-core = { path = "../ndn-fwd/crates/tooling/ndn-tools-core" }
 
 # Core async runtime — individual crates enable only the features they need
 tokio      = { version = "1", default-features = false }
