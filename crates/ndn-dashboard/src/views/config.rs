@@ -728,6 +728,18 @@ fn face_config_label(face: &FaceConfig) -> (&'static str, String) {
             ),
         ),
         FaceConfig::Quic { remote, .. } => ("QUIC", format!("remote={remote} tls=cert-hash")),
+        FaceConfig::Radio { radios } => (
+            "Radio",
+            format!(
+                "radios={} drivers={}",
+                radios.len(),
+                radios
+                    .iter()
+                    .map(|r| r.driver.as_str())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+        ),
     }
 }
 
