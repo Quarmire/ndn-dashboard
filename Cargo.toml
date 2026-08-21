@@ -4,6 +4,9 @@ members = [
     "crates/ndn-dashboard",
     "crates/ndn-dashboard-next",
     "crates/dash-glossary",
+    # Adopted from ndn-fwd (P1): wasm-only browser demo, UI tier like the rest
+    # of this repo. Not a default member — build explicitly for wasm32.
+    "crates/dioxus-demo",
 ]
 default-members = [
     "crates/ndn-dashboard",
@@ -20,6 +23,16 @@ license = "MIT OR Apache-2.0"
 [workspace.metadata.crane]
 name = "ndn-dashboard"
 
+# Single source of truth for lint policy — members opt in via `[lints]
+# workspace = true` (dioxus-demo does; mirrors the ndn-fwd/ndn-rs standard).
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+
 [workspace.dependencies]
 # NDN workspace crates — grouped by subdirectory layer
 ndn-tlv       = { path = "../ndn-rs/crates/core/ndn-tlv", default-features = false }
@@ -27,6 +40,12 @@ ndn-packet    = { path = "../ndn-rs/crates/core/ndn-packet", default-features = 
 ndn-mgmt-wire = { path = "../ndn-rs/crates/core/ndn-mgmt-wire" }
 ndn-transport = { path = "../ndn-rs/crates/core/ndn-transport" }
 ndn-runtime   = { path = "../ndn-rs/crates/core/ndn-runtime" }
+ndn-store     = { path = "../ndn-rs/crates/forwarding/ndn-store" }
+# Faces + browser plumbing for dioxus-demo
+ndn-face-webtransport-wasm = { path = "../ndn-ext/crates/faces/ndn-face-webtransport-wasm" }
+ndn-face-webrtc            = { path = "../ndn-ext/crates/faces/ndn-face-webrtc" }
+ndn-face-shared-worker     = { path = "../ndn-ext/crates/faces/ndn-face-shared-worker" }
+ndn-pib-idb                = { path = "../ndn-fwd/crates/ndn-pib-idb" }
 ndn-face-webble       = { path = "../ndn-ext/crates/faces/ndn-face-webble" }
 ndn-security  = { path = "../ndn-rs/crates/security/ndn-security" }
 ndn-engine    = { path = "../ndn-rs/crates/forwarding/ndn-engine" }
