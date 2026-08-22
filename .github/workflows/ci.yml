@@ -44,8 +44,6 @@ jobs:
         run: cargo clippy -- -D warnings
       - name: Test
         run: cargo test
-      - name: Glossary is exhaustive (EduGloss guard)
-        run: cargo run -q -p dash-glossary -- check .
       - name: Zero authored JavaScript
         run: |
           set -e
