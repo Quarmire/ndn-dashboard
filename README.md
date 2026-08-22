@@ -1,8 +1,7 @@
 # ndn-dashboard
 
 The NDN operator **dashboard** (Dioxus) for the
-[ndn-rs](https://github.com/Quarmire/ndn-rs) ecosystem, plus the
-`ndn-dashboard-next` variant.
+[ndn-rs](https://github.com/Quarmire/ndn-rs) ecosystem.
 
 Built on [ndn-rs](https://github.com/Quarmire/ndn-rs) (core),
 [ndn-ext](https://github.com/Quarmire/ndn-ext) (faces, dashboard-core, onboarding)

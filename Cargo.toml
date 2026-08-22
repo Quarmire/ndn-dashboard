@@ -2,14 +2,12 @@
 resolver = "2"
 members = [
     "crates/ndn-dashboard",
-    "crates/ndn-dashboard-next",
     # Adopted from ndn-fwd (P1): wasm-only browser demo, UI tier like the rest
     # of this repo. Not a default member — build explicitly for wasm32.
     "crates/dioxus-demo",
 ]
 default-members = [
     "crates/ndn-dashboard",
-    "crates/ndn-dashboard-next",
 ]
 
 [workspace.package]
