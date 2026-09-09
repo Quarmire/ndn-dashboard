@@ -20,6 +20,7 @@ pub mod key_rotation;
 pub mod logs;
 #[cfg(feature = "desktop")]
 pub mod modals;
+pub mod monitors;
 pub mod onboarding;
 pub mod overview;
 #[cfg(feature = "desktop")]
@@ -56,6 +57,7 @@ pub enum View {
     Fleet,
     Routing,
     Radio,
+    Monitors,
     Tools,
     Compose,
     TrustContext,
@@ -101,6 +103,7 @@ impl Bucket {
                 View::RateLimit,
                 View::Routing,
                 View::Radio,
+                View::Monitors,
                 View::Logs,
                 View::Trace,
                 View::Fleet,
@@ -131,6 +134,7 @@ impl View {
             View::Fleet => "Fleet",
             View::Routing => "Routing",
             View::Radio => "Radio",
+            View::Monitors => "Monitors",
             View::Tools => "Tools",
             View::Compose => "Published",
             View::TrustContext => "Trust Context",
@@ -153,6 +157,7 @@ impl View {
             | View::Fleet
             | View::Routing
             | View::Radio
+            | View::Monitors
             | View::Tools
             | View::DashboardConfig
             | View::RouterConfig => Bucket::Engine,

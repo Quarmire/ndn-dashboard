@@ -2,6 +2,258 @@ use crate::app::AppCtx;
 use crate::types::FaceInfo;
 use dioxus::prelude::*;
 
+/// The radio-cognition + hardware view models and the `[named-radio]`
+/// control-surface parser now live in the shared `ndn-viz` crate; this
+/// view consumes them. See `ndn_viz::control`.
+
+/// Web build: fetch the cognition surface and render the decided plan.
+#[cfg(feature = "web")]
+#[component]
+pub fn CognitionPanel() -> Element {
+    use crate::app_web::default_ws_url;
+    use crate::ws_mgmt::WsMgmtClient;
+    use ndn_config::ControlResponse;
+    use ndn_packet::Name;
+    use ndn_viz::RadioCognition;
+
+    let mut refresh = use_signal(|| 0u32);
+    let cog = use_resource(move || async move {
+        let _ = refresh();
+        let mut client = WsMgmtClient::new(&default_ws_url());
+        client.connect().await.map_err(|e| e.to_string())?;
+        let name = Name::root()
+            .append(b"localhost")
+            .append(b"nfd")
+            .append(b"ext")
+            .append(b"list");
+        let content = client
+            .fetch_data(name)
+            .await
+            .map_err(|e| format!("ext/list: {e}"))?;
+        // ext/list is a ControlResponse; the rendered text is its status_text.
+        let cr = ControlResponse::decode(content).map_err(|e| format!("decode: {e:?}"))?;
+        Ok::<RadioCognition, String>(RadioCognition::parse(&cr.status_text))
+    });
+
+    rsx! {
+        div { class: "section",
+            div { style: "display:flex;align-items:center;gap:0.75rem;",
+                div { class: "section-title", style: "margin:0;", "Radio Cognition — Decided Plan" }
+                button {
+                    style: "padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;",
+                    onclick: move |_| refresh += 1,
+                    "Refresh"
+                }
+            }
+            match &*cog.read_unchecked() {
+                None => rsx! { div { class: "empty", "Loading cognition telemetry…" } },
+                Some(Err(e)) => rsx! { div { class: "empty", "Cognition surface unavailable: {e}" } },
+                Some(Ok(c)) if !c.present => rsx! {
+                    div { class: "empty", "No named-radio cognition surface registered on this forwarder." }
+                },
+                Some(Ok(c)) => rsx! {
+                    div { style: "display:flex;flex-wrap:wrap;gap:12px;margin:8px 0;",
+                        CogStat { label: "Strategy", value: c.strategy.clone() }
+                        CogStat { label: "Managed objects", value: c.managed_objects.clone() }
+                        CogStat { label: "Suppressed", value: c.suppressed.clone() }
+                        CogStat { label: "Objective", value: c.objective.clone() }
+                        CogStat { label: "EDCCA ignored", value: c.contention_edcca_ignored.clone() }
+                        CogStat { label: "Defer clamped", value: c.contention_defer_threshold_clamped.clone() }
+                        CogStat { label: "FEC parity over-gen", value: c.contention_fec_parity_over_generation.clone() }
+                    }
+                    div { style: "font-size:11px;color:var(--text-muted);margin:-4px 0 8px;",
+                        "Actuator-side contention ledger (cumulative since boot): "
+                        "EDCCA ignored = medium claims that bypassed this node's defer policy; "
+                        "Defer clamped = defer thresholds pushed outside the decidable band; "
+                        "FEC parity over-gen = link-FEC parity budget exceeded."
+                    }
+                    if c.radios.is_empty() {
+                        div { style: "font-size:12px;color:var(--text-muted);",
+                            "No per-radio allocation right now — cognition is suppressing TX (no demand/rank). Drive traffic (e.g. the /bench relay) to see decided channel/rate."
+                        }
+                    } else {
+                        table {
+                            thead {
+                                tr {
+                                    th { "Radio" }
+                                    th { "Channel" }
+                                    th { "MCS" }
+                                    th { "NSS" }
+                                    th { "BW" }
+                                    th { "TX power" }
+                                    th { "Link-FEC" }
+                                    th { "EDCCA ignore" }
+                                    th { "Defer dBm" }
+                                    th { "Objective" }
+                                    th { "Suppress" }
+                                }
+                            }
+                            tbody {
+                                for r in c.radios.iter() {
+                                    tr {
+                                        td { class: "mono", "{r.id}" }
+                                        td { class: "mono", "{r.channel}" }
+                                        td { class: "mono", "{r.mcs}" }
+                                        td { class: "mono", "{r.nss}" }
+                                        td { class: "mono", "{r.bw}" }
+                                        td { class: "mono", "{r.tx_power}" }
+                                        td { class: "mono", "{r.link_fec}" }
+                                        td { class: "mono", "{r.edcca_ignore}" }
+                                        td { class: "mono", "{r.defer_threshold_dbm}" }
+                                        td { class: "mono", "{r.objective}" }
+                                        td { class: "mono", "{r.suppress}" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    div { style: "font-size:11px;color:var(--text-muted);margin-top:8px;",
+                        "The named-data radio actuates these itself via cognition — read-only. Source: "
+                        span { class: "mono", "/localhost/nfd/ext/list" }
+                        " [named-radio]."
+                    }
+                },
+            }
+        }
+    }
+}
+
+/// Desktop build: cognition fetch uses the native mgmt path (not yet wired);
+/// show a hint rather than the panel.
+#[cfg(not(feature = "web"))]
+#[component]
+pub fn CognitionPanel() -> Element {
+    rsx! {
+        div { class: "section",
+            div { class: "section-title", "Radio Cognition — Decided Plan" }
+            div { class: "empty",
+                "Cognition telemetry (ext/list) is shown in the web build."
+            }
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+#[component]
+fn CogStat(label: String, value: String) -> Element {
+    let shown = if value.is_empty() {
+        "—".to_string()
+    } else {
+        value
+    };
+    rsx! {
+        div { style: "background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;min-width:120px;",
+            div { style: "font-size:11px;color:var(--text-muted);", "{label}" }
+            div { style: "font-size:15px;color:var(--text);", "{shown}" }
+        }
+    }
+}
+
+/// Web build: the radio HARDWARE substrate (device capability + PHY health that
+/// cognition acts on), from the same `[named-radio]` control surface. Distinct
+/// from the decided plan above — read-only ground truth.
+#[cfg(feature = "web")]
+#[component]
+pub fn HardwarePanel() -> Element {
+    use crate::app_web::default_ws_url;
+    use crate::ws_mgmt::WsMgmtClient;
+    use ndn_config::ControlResponse;
+    use ndn_packet::Name;
+    use ndn_viz::HardwareInventory;
+
+    let mut refresh = use_signal(|| 0u32);
+    let hw = use_resource(move || async move {
+        let _ = refresh();
+        let mut client = WsMgmtClient::new(&default_ws_url());
+        client.connect().await.map_err(|e| e.to_string())?;
+        let name = Name::root()
+            .append(b"localhost")
+            .append(b"nfd")
+            .append(b"ext")
+            .append(b"list");
+        let content = client
+            .fetch_data(name)
+            .await
+            .map_err(|e| format!("ext/list: {e}"))?;
+        let cr = ControlResponse::decode(content).map_err(|e| format!("decode: {e:?}"))?;
+        Ok::<HardwareInventory, String>(HardwareInventory::parse(&cr.status_text))
+    });
+
+    let cell = |v: &Option<String>| v.clone().unwrap_or_else(|| "—".to_string());
+
+    rsx! {
+        div { class: "section",
+            div { style: "display:flex;align-items:center;gap:0.75rem;",
+                div { class: "section-title", style: "margin:0;", "Radio Hardware — Substrate" }
+                button {
+                    style: "padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;",
+                    onclick: move |_| refresh += 1,
+                    "Refresh"
+                }
+            }
+            match &*hw.read_unchecked() {
+                None => rsx! { div { class: "empty", "Loading hardware telemetry…" } },
+                Some(Err(e)) => rsx! { div { class: "empty", "Hardware surface unavailable: {e}" } },
+                Some(Ok(h)) if h.radios.is_empty() => rsx! {
+                    div { class: "empty", "No radios registered on this forwarder's cognition surface." }
+                },
+                Some(Ok(h)) if !h.any_substrate() => rsx! {
+                    div { style: "font-size:12px;color:var(--text-muted);",
+                        "Radios are present, but this forwarder is not advertising substrate detail yet "
+                        "(chip/capability/RSSI/occupancy). Update the named-radio surface to populate this view."
+                    }
+                },
+                Some(Ok(h)) => rsx! {
+                    table {
+                        thead {
+                            tr {
+                                th { "Radio" }
+                                th { "Chip/class" }
+                                th { "Band" }
+                                th { "Max MCS" }
+                                th { "RX chains" }
+                                th { "dBm max" }
+                                th { "RSSI" }
+                                th { "Occupancy" }
+                            }
+                        }
+                        tbody {
+                            for d in h.radios.iter() {
+                                tr {
+                                    td { class: "mono", "{d.id}" }
+                                    td { class: "mono", "{cell(&d.chip)}" }
+                                    td { class: "mono", "{cell(&d.band)}" }
+                                    td { class: "mono", "{cell(&d.max_mcs)}" }
+                                    td { class: "mono", "{cell(&d.rx_chains)}" }
+                                    td { class: "mono", "{cell(&d.dbm_max)}" }
+                                    td { class: "mono", "{cell(&d.rssi_dbm)}" }
+                                    td { class: "mono", "{cell(&d.occupancy_pct)}" }
+                                }
+                            }
+                        }
+                    }
+                    div { style: "font-size:11px;color:var(--text-muted);margin-top:8px;",
+                        "The substrate cognition acts on. Source: "
+                        span { class: "mono", "/localhost/nfd/ext/list" }
+                        " [named-radio] hardware keys."
+                    }
+                },
+            }
+        }
+    }
+}
+
+#[cfg(not(feature = "web"))]
+#[component]
+pub fn HardwarePanel() -> Element {
+    rsx! {
+        div { class: "section",
+            div { class: "section-title", "Radio Hardware — Substrate" }
+            div { class: "empty", "Hardware substrate (ext/list) is shown in the web build." }
+        }
+    }
+}
+
 #[component]
 pub fn Radio() -> Element {
     let ctx = use_context::<AppCtx>();
@@ -22,6 +274,8 @@ pub fn Radio() -> Element {
         .collect();
 
     rsx! {
+        CognitionPanel {}
+        HardwarePanel {}
         div { class: "section",
             div { class: "section-title", "Radio / Wireless Faces" }
             if wireless_faces.is_empty() {

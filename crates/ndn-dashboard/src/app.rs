@@ -1578,6 +1578,11 @@ fn render_view(view: View) -> Element {
         View::Fleet => rsx! { Fleet {} },
         View::Routing => rsx! { Routing {} },
         View::Radio => rsx! { Radio {} },
+        View::Monitors => rsx! {
+            div { class: "placeholder", style: "padding:2rem;color:var(--text2);",
+                "The monitors view is available in the web build (it reads the forwarder's `[monitors]` ext surface over the WS management link)."
+            }
+        },
         View::Tools => rsx! { Tools {} },
         View::Compose => rsx! { crate::views::compose::Compose {} },
         View::TrustContext => rsx! { crate::views::trust_context::TrustContext {} },

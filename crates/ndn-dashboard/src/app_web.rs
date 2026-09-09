@@ -21,6 +21,7 @@ use crate::{
         View,
         fleet::Fleet,
         logs::Logs,
+        monitors::Monitors,
         onboarding::{Onboarding, is_onboarded},
         overview::Overview,
         radio::Radio,
@@ -752,6 +753,7 @@ fn render_view_web(view: View) -> Element {
             }
         },
         View::Radio => rsx! { Radio {} },
+        View::Monitors => rsx! { Monitors {} },
         View::Compose => rsx! { crate::views::compose::Compose {} },
         View::TrustContext => rsx! { crate::views::trust_context::TrustContext {} },
         // Desktop-only views render a placeholder on web.

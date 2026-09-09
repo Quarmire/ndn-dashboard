@@ -94,6 +94,11 @@ witness-export = [
 # UI-agnostic logic + data models (operator keyring/custodian, trust/audit
 # chains, forwarder profile, the data structs the UI renders). Dioxus-free.
 ndn-dashboard-core = { git = "https://github.com/Quarmire/ndn-ext", tag = "v0.1.0-alpha.3" }
+# Shared, UI-agnostic data-visualization layer (OTLP span decode + trace/span
+# model + dataset freshness) — the Phase-0 salvage extraction, shared with
+# ndn-sim. Path dep for local dev until it lands in an ndn-ext release tag; it
+# has ZERO transitive deps so it introduces no version skew (unlike patching core).
+ndn-viz = { path = "../../../ndn-ext/crates/dashboard/ndn-viz" }
 ndn-config = { workspace = true, optional = true }
 ndn-mgmt-wire = { workspace = true }
 # Wasm-safe Custodian trait + CustodianRef (the canonical "where the key lives"
