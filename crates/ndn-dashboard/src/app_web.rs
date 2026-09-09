@@ -27,6 +27,7 @@ use crate::{
         radio::Radio,
         routing::Routing,
         security::Security,
+        services::Services,
         strategy::Strategy,
     },
     ws_mgmt::WsMgmtClient,
@@ -754,6 +755,9 @@ fn render_view_web(view: View) -> Element {
         },
         View::Radio => rsx! { Radio {} },
         View::Monitors => rsx! { Monitors {} },
+        View::Services => rsx! {
+            Services {
+        } },
         View::Compose => rsx! { crate::views::compose::Compose {} },
         View::TrustContext => rsx! { crate::views::trust_context::TrustContext {} },
         // Desktop-only views render a placeholder on web.

@@ -34,6 +34,7 @@ pub mod safebag_import;
 pub mod security;
 pub mod security_did;
 pub mod security_did_ext;
+pub mod services;
 #[cfg(feature = "desktop")]
 pub mod session;
 pub mod strategy;
@@ -58,6 +59,7 @@ pub enum View {
     Routing,
     Radio,
     Monitors,
+    Services,
     Tools,
     Compose,
     TrustContext,
@@ -104,6 +106,7 @@ impl Bucket {
                 View::Routing,
                 View::Radio,
                 View::Monitors,
+                View::Services,
                 View::Logs,
                 View::Trace,
                 View::Fleet,
@@ -135,6 +138,7 @@ impl View {
             View::Routing => "Routing",
             View::Radio => "Radio",
             View::Monitors => "Monitors",
+            View::Services => "Services",
             View::Tools => "Tools",
             View::Compose => "Published",
             View::TrustContext => "Trust Context",
@@ -158,6 +162,7 @@ impl View {
             | View::Routing
             | View::Radio
             | View::Monitors
+            | View::Services
             | View::Tools
             | View::DashboardConfig
             | View::RouterConfig => Bucket::Engine,
