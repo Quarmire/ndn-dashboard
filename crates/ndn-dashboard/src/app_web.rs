@@ -31,7 +31,7 @@ use crate::{
     ws_mgmt::WsMgmtClient,
 };
 
-fn default_ws_url() -> String {
+pub(crate) fn default_ws_url() -> String {
     let query = web_sys::window()
         .and_then(|w| w.location().search().ok())
         .unwrap_or_default();
@@ -745,6 +745,7 @@ fn render_view_web(view: View) -> Element {
         View::Routing => rsx! { Routing {} },
         View::Security => rsx! { Security {} },
         View::Logs => rsx! { Logs {} },
+        View::Trace => rsx! { crate::views::trace::Trace {} },
         View::RouterConfig | View::DashboardConfig => rsx! {
             div { class: "placeholder", style: "padding:2rem;color:var(--text2);",
                 "Configuration editing requires the desktop version."
@@ -818,6 +819,10 @@ async fn poll_all_web(
                 let mut s = *strategies;
                 s.set(st.strategies.clone());
             }
+            // Identity-plane updates are produced by `poll_identity`, not
+            // `poll_forwarding`, and are applied in the security/identity block
+            // below — never emitted here, so ignore them to stay exhaustive.
+            StateUpdate::Approvals | StateUpdate::Identities | StateUpdate::Anchors => {}
         }
     }
 
@@ -1355,7 +1360,9 @@ async fn run_cmd_web(
                 name: Some(parsed),
                 ..Default::default()
             };
-            client.send_cmd("security", "anchor-remove", Some(&cp)).await
+            client
+                .send_cmd("security", "anchor-remove", Some(&cp))
+                .await
         }
         DashCmd::SecurityTokenAdd(description) => {
             let params = ControlParameters {

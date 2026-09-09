@@ -42,12 +42,12 @@ pub use ndn_dashboard_core::{
     preprovision, security_chains, signed_data_chain, types,
 };
 
-#[cfg(feature = "web")]
-mod ws_mgmt;
 #[cfg(feature = "desktop")]
 mod native_mgmt;
 #[cfg(feature = "desktop")]
 mod remote_signer;
+#[cfg(feature = "web")]
+mod ws_mgmt;
 
 fn main() {
     #[cfg(feature = "desktop")]

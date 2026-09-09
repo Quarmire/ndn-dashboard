@@ -66,26 +66,27 @@ struct GrantPreview {
 /// Parse + validate a pasted grant URI into its preview, or an error string.
 /// The grant carries the operator's certificate (name + public key + algorithm).
 fn parse_grant(uri: &str) -> Result<GrantPreview, String> {
-    let (namespace, ttl_secs, cert_wire) =
-        match TrustEnvelope::from_uri(uri.trim()).map_err(|e| format!("{e}"))? {
-            TrustEnvelope::Capability(Capability {
-                direction: CapDirection::Grant,
-                namespace,
-                ttl_secs,
-                grant: Some(cert),
-                ..
-            }) => (namespace, ttl_secs, cert),
-            TrustEnvelope::Capability(Capability {
-                direction: CapDirection::Grant,
-                grant: None,
-                ..
-            }) => return Err("grant carries no operator certificate".into()),
-            TrustEnvelope::Capability(Capability {
-                direction: CapDirection::Request,
-                ..
-            }) => return Err("that's a request, not a grant — scan it with the phone instead".into()),
-            _ => return Err("not a capability grant".into()),
-        };
+    let (namespace, ttl_secs, cert_wire) = match TrustEnvelope::from_uri(uri.trim())
+        .map_err(|e| format!("{e}"))?
+    {
+        TrustEnvelope::Capability(Capability {
+            direction: CapDirection::Grant,
+            namespace,
+            ttl_secs,
+            grant: Some(cert),
+            ..
+        }) => (namespace, ttl_secs, cert),
+        TrustEnvelope::Capability(Capability {
+            direction: CapDirection::Grant,
+            grant: None,
+            ..
+        }) => return Err("grant carries no operator certificate".into()),
+        TrustEnvelope::Capability(Capability {
+            direction: CapDirection::Request,
+            ..
+        }) => return Err("that's a request, not a grant — scan it with the phone instead".into()),
+        _ => return Err("not a capability grant".into()),
+    };
     let cert = ndn_packet::Data::decode(cert_wire).map_err(|e| format!("certificate: {e:?}"))?;
     let identity = cert.name.to_string();
     let pk = cert.content().ok_or("certificate has no public key")?;

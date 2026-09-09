@@ -225,6 +225,24 @@ impl WsMgmtClient {
         Ok(Some(seq))
     }
 
+    /// Fetch an arbitrary Data packet by name and return its raw content bytes.
+    ///
+    /// Unlike [`send_cmd`](Self::send_cmd) this issues a plain **unsigned**
+    /// Interest (no `ControlParameters`, no signer) and returns the Data content
+    /// verbatim — the seam the observability trace view and radio-cognition
+    /// (`ext/list`) reads use, both of which are public unsigned datasets.
+    pub async fn fetch_data(&mut self, name: Name) -> Result<Bytes> {
+        let interest_wire = InterestBuilder::new(name)
+            .can_be_prefix()
+            .must_be_fresh()
+            .lifetime(Duration::from_millis(4000))
+            .build();
+        let data_wire = self.exchange(interest_wire).await?;
+        let data =
+            Data::decode(strip_lp(data_wire)).map_err(|e| anyhow!("Data decode: {:?}", e))?;
+        Ok(data.content().cloned().unwrap_or_default())
+    }
+
     async fn exchange(&mut self, interest_wire: Bytes) -> Result<Bytes> {
         match &mut self.transport {
             Transport::WebSocket(slot) => {

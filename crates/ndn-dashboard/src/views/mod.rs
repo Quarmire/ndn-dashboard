@@ -38,6 +38,7 @@ pub mod session;
 pub mod strategy;
 #[cfg(feature = "desktop")]
 pub mod tools;
+pub mod trace;
 pub mod traffic;
 pub mod trust_context;
 
@@ -49,6 +50,7 @@ pub enum View {
     Coding,
     RateLimit,
     Logs,
+    Trace,
     Session,
     Security,
     Fleet,
@@ -100,6 +102,7 @@ impl Bucket {
                 View::Routing,
                 View::Radio,
                 View::Logs,
+                View::Trace,
                 View::Fleet,
                 View::Tools,
             ],
@@ -122,6 +125,7 @@ impl View {
             View::Coding => "Coding",
             View::RateLimit => "Rate Limit",
             View::Logs => "Logs",
+            View::Trace => "Traces",
             View::Session => "Session",
             View::Security => "Security",
             View::Fleet => "Fleet",
@@ -145,15 +149,14 @@ impl View {
             | View::Coding
             | View::RateLimit
             | View::Logs
+            | View::Trace
             | View::Fleet
             | View::Routing
             | View::Radio
             | View::Tools
             | View::DashboardConfig
             | View::RouterConfig => Bucket::Engine,
-            View::Security | View::Session | View::TrustContext | View::Pairing => {
-                Bucket::Identity
-            }
+            View::Security | View::Session | View::TrustContext | View::Pairing => Bucket::Identity,
             View::Compose => Bucket::Compose,
         }
     }

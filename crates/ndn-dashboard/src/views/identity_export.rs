@@ -153,7 +153,9 @@ fn merged_rows() -> Vec<IdRow> {
                 active: l.active,
                 exportable: l.exportable,
                 saved: saved_entry.is_some(),
-                guard: saved_entry.map(|s| s.guard).unwrap_or(GuardKind::Passphrase),
+                guard: saved_entry
+                    .map(|s| s.guard)
+                    .unwrap_or(GuardKind::Passphrase),
                 safebag_b64: None,
             }
         })
@@ -777,8 +779,9 @@ mod tests {
             .await
             .unwrap();
 
-        let bag = ndn_security::safebag::SafeBag::encrypt(Bytes::from(cert_wire.to_vec()), &pkcs8, b"pw")
-            .expect("encrypt");
+        let bag =
+            ndn_security::safebag::SafeBag::encrypt(Bytes::from(cert_wire.to_vec()), &pkcs8, b"pw")
+                .expect("encrypt");
         let wire = bag.encode();
 
         let parsed = ndn_security::safebag::SafeBag::decode(&wire).expect("decode");

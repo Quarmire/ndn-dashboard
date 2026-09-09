@@ -1572,6 +1572,7 @@ fn render_view(view: View) -> Element {
         View::Coding => rsx! { crate::views::coding::Coding {} },
         View::RateLimit => rsx! { crate::views::rate_limit::RateLimit {} },
         View::Logs => rsx! {},
+        View::Trace => rsx! { crate::views::trace::Trace {} },
         View::Session => rsx! { Session {} },
         View::Security => rsx! { Security {} },
         View::Fleet => rsx! { Fleet {} },
@@ -1661,7 +1662,9 @@ async fn poll_all(
         StateUpdate::Strategies,
     ] {
         if !updates.contains(&essential) {
-            return Err(format!("forwarding poll incomplete ({essential:?} missing)"));
+            return Err(format!(
+                "forwarding poll incomplete ({essential:?} missing)"
+            ));
         }
     }
     {

@@ -20,12 +20,12 @@ use std::time::Duration;
 use async_trait::async_trait;
 use bytes::Bytes;
 use ndn_app::Consumer;
+use ndn_packet::encode::InterestBuilder;
+use ndn_packet::{Name, NameComponent};
 use ndn_security::custodian::{
     CustodianError, CustodianRef, RemoteSignRequest, RemoteSignerTransport, WireSignRequest,
     WireSignResponse,
 };
-use ndn_packet::encode::InterestBuilder;
-use ndn_packet::{Name, NameComponent};
 use ndn_trust_envelope::{CapDirection, Capability, TrustEnvelope};
 use tokio::sync::Mutex;
 
@@ -58,8 +58,8 @@ pub fn pair_from_grant(grant_uri: &str, socket_path: PathBuf) -> Result<String, 
     };
 
     // The responder prefix is name-derived: <operator identity>/signer.
-    let cert =
-        ndn_packet::Data::decode(cert_wire.clone()).map_err(|e| format!("certificate decode: {e:?}"))?;
+    let cert = ndn_packet::Data::decode(cert_wire.clone())
+        .map_err(|e| format!("certificate decode: {e:?}"))?;
     let identity = identity_of_cert_name(&cert.name)
         .ok_or("operator certificate name has no /KEY/ component")?;
     let responder_prefix = identity.clone().append("signer");
