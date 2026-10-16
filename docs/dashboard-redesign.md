@@ -133,7 +133,7 @@ in a new shell.
 The existing headless core (`ndn-ext/crates/dashboard/ndn-dashboard-core`) is the
 asset to build on — it already has `engine`, `mgmt`, `identity_axis`, `keyguard`,
 `operator_keyring`(+ store), `security_chains`, `signed_data_chain`,
-`forwarder_profile`, `native_join`, `preprovision`, `types`. Changes:
+`forwarder_profile`, `native_enroll`, `preprovision`, `types`. Changes:
 
 - **Fix wasm-cleanliness** (started this session: `types.rs::days_to_expiry` now
   routes through a cfg-split `now_unix_s()` using `js_sys::Date::now()` on wasm).

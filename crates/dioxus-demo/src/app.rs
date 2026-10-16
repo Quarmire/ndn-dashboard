@@ -38,7 +38,7 @@ pub fn App() -> Element {
     rsx! {
         Header { face_status }
         main {
-            JoinPanel { url }
+            EnrollPanel { url }
             FacePanel { face_status, url, producer_prefix, producer_counter }
             ConsumerPanel { interest_name, last_data, last_error, face_status }
             ProducerPanel { producer_prefix, producer_counter, face_status }
@@ -62,13 +62,13 @@ fn Header(face_status: Signal<FaceStatus>) -> Element {
     }
 }
 
-/// Read an invite token from the URL fragment (`#join=<token>`, optionally with
+/// Read an invite token from the URL fragment (`#enroll=<token>`, optionally with
 /// `&`-separated extras), if present and non-empty.
 fn token_from_fragment() -> Option<String> {
     let hash = web_sys::window()?.location().hash().ok()?;
     hash.trim_start_matches('#')
         .split('&')
-        .find_map(|kv| kv.strip_prefix("join=").map(str::to_owned))
+        .find_map(|kv| kv.strip_prefix("enroll=").map(str::to_owned))
         .filter(|t| !t.is_empty())
 }
 
@@ -76,12 +76,12 @@ fn js_err(e: wasm_bindgen::JsValue) -> String {
     e.as_string().unwrap_or_else(|| format!("{e:?}"))
 }
 
-/// NDNCERT onboarding gesture: paste (or scan via a `#join=` link) an invite
+/// NDNCERT onboarding gesture: paste (or scan via a `#enroll=` link) an invite
 /// token, enrol against the embedded CA over the forwarder face, and persist
 /// the identity in IndexedDB so a reload stays signed in.
 #[component]
-fn JoinPanel(url: Signal<String>) -> Element {
-    use crate::join::JoinClient;
+fn EnrollPanel(url: Signal<String>) -> Element {
+    use crate::enroll_client::EnrollClient;
 
     let mut token = use_signal(|| token_from_fragment().unwrap_or_default());
     // (cert_name, restored_from_this_device)
@@ -91,7 +91,7 @@ fn JoinPanel(url: Signal<String>) -> Element {
 
     // On mount, restore a cached identity if one exists (no NDNCERT round-trip).
     use_future(move || async move {
-        match JoinClient::open().await {
+        match EnrollClient::open().await {
             Ok(mut c) => match c.try_restore().await {
                 Ok(Some(info)) => identity.set(Some((info.cert_name(), info.restored()))),
                 Ok(None) => {}
@@ -112,9 +112,9 @@ fn JoinPanel(url: Signal<String>) -> Element {
         error.set(None);
         spawn(async move {
             let outcome = async {
-                let mut c = JoinClient::open().await.map_err(js_err)?;
+                let mut c = EnrollClient::open().await.map_err(js_err)?;
                 let info = c
-                    .join(host, "/demo".to_owned(), "/demo/users".to_owned(), tok)
+                    .enroll_via(host, "/demo".to_owned(), "/demo/users".to_owned(), tok)
                     .await
                     .map_err(js_err)?;
                 Ok::<_, String>((info.cert_name(), info.restored()))
@@ -130,7 +130,7 @@ fn JoinPanel(url: Signal<String>) -> Element {
 
     let do_forget = move |_| {
         spawn(async move {
-            if let Ok(c) = JoinClient::open().await {
+            if let Ok(c) = EnrollClient::open().await {
                 let _ = c.forget().await;
             }
             identity.set(None);
@@ -144,18 +144,18 @@ fn JoinPanel(url: Signal<String>) -> Element {
 
     rsx! {
         section { class: "panel",
-            h2 { "Join a network" }
+            h2 { "Enroll with a token" }
             if let Some((cert, restored)) = current {
                 p { class: "muted", "Signed in." }
                 dl {
                     dt { "Identity" }
-                    dd { "data-testid": "join-cert", "{cert}" }
+                    dd { "data-testid": "enroll-cert", "{cert}" }
                     dt { "Source" }
                     dd {
                         if restored { "restored from this device" } else { "freshly enrolled" }
                     }
                 }
-                button { "data-testid": "join-forget", onclick: do_forget, "Forget identity" }
+                button { "data-testid": "enroll-forget", onclick: do_forget, "Forget identity" }
             } else {
                 div { class: "field",
                     label { "Forwarder URL" }
@@ -169,17 +169,17 @@ fn JoinPanel(url: Signal<String>) -> Element {
                     label { "Invite token" }
                     input {
                         r#type: "text",
-                        "data-testid": "join-token",
-                        placeholder: "paste an invite token (or open a #join=… link)",
+                        "data-testid": "enroll-token",
+                        placeholder: "paste an invite token (or open a #enroll=… link)",
                         value: "{token}",
                         oninput: move |e| token.set(e.value()),
                     }
                 }
                 button {
-                    "data-testid": "join-submit",
+                    "data-testid": "enroll-submit",
                     disabled: busy,
                     onclick: do_join,
-                    if busy { "Joining…" } else { "Join" }
+                    if busy { "Enrolling…" } else { "Enroll" }
                 }
                 if let Some(e) = err {
                     p { class: "muted", "Error: {e}" }

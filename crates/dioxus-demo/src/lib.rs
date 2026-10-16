@@ -1,6 +1,6 @@
 //! In-browser ndn-rs demo: a Dioxus web app driving a real
 //! `BrowserWebTransportFace` against a forwarder, with optional
-//! SharedWorker-hosted engine, WebRTC transit, and an NDNCERT join client.
+//! SharedWorker-hosted engine, WebRTC transit, and an NDNCERT enrollment client.
 //! All async work routes through [`ndn_runtime::default_runtime`]; the
 //! render path never calls `spawn_local` directly.
 
@@ -35,13 +35,13 @@ pub mod webrtc_adapter;
 #[cfg(all(target_arch = "wasm32", feature = "shared-engine"))]
 pub mod transit_bridge;
 
-// Onboarding client: used by the shared-engine bundle (JS-facing JoinClient)
-// and by the `web` tab build's Join panel.
+// Onboarding client: used by the shared-engine bundle (JS-facing EnrollClient)
+// and by the `web` tab build's Enroll panel.
 #[cfg(all(
     target_arch = "wasm32",
     any(feature = "web", feature = "shared-engine")
 ))]
-pub mod join;
+pub mod enroll_client;
 
 #[cfg(all(target_arch = "wasm32", feature = "web"))]
 pub fn launch() {

@@ -79,7 +79,7 @@ pub async fn enroll(
 }
 
 /// `Nop` matches `NopChallenge` (auto-approve, demo only). `Token` matches
-/// `TokenChallenge` for the onboarding-link path (`#join=<token>`).
+/// `TokenChallenge` for the onboarding-link path (`#enroll=<token>`).
 pub enum Challenge {
     Nop,
     Token { value: String },

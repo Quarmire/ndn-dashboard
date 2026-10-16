@@ -1,6 +1,6 @@
 //! Onboarding-link client: a browser-tier [`Engine`] plus NDNCERT-via-token
 //! enrollment plus IdbPib-backed identity persistence so refreshing the tab
-//! short-circuits the join flow.
+//! short-circuits the enrollment flow.
 
 use std::sync::Arc;
 
@@ -16,20 +16,20 @@ use crate::enroll::{Challenge, EnrolledIdentity, enroll_with_signer};
 
 const PIB_DB_NAME: &str = "ndn-rs-pib";
 
-fn join_log(msg: &str) {
-    web_sys::console::log_1(&format!("[join] {msg}").into());
+fn enroll_log(msg: &str) {
+    web_sys::console::log_1(&format!("[enroll] {msg}").into());
 }
 
-/// JS-visible summary of a join or restore. `restored=true` means the
+/// JS-visible summary of an enrollment or restore. `restored=true` means the
 /// identity came from IdbPib without an NDNCERT round-trip.
 #[wasm_bindgen]
-pub struct JoinedIdentityInfo {
+pub struct EnrolledIdentityInfo {
     cert_name: String,
     restored: bool,
 }
 
 #[wasm_bindgen]
-impl JoinedIdentityInfo {
+impl EnrolledIdentityInfo {
     #[wasm_bindgen(getter)]
     pub fn cert_name(&self) -> String {
         self.cert_name.clone()
@@ -43,16 +43,16 @@ impl JoinedIdentityInfo {
 
 /// Browser-tier onboarding client.
 #[wasm_bindgen]
-pub struct JoinClient {
+pub struct EnrollClient {
     pib: IdbPib,
     engine: Option<Arc<Engine>>,
     signer: Option<Arc<Ed25519Signer>>,
 }
 
 #[wasm_bindgen]
-impl JoinClient {
+impl EnrollClient {
     /// Open the per-origin PIB (idempotent; per-origin via IndexedDB).
-    pub async fn open() -> Result<JoinClient, JsValue> {
+    pub async fn open() -> Result<EnrollClient, JsValue> {
         console_error_panic_hook::set_once();
         let pib = IdbPib::open(PIB_DB_NAME)
             .await
@@ -67,14 +67,14 @@ impl JoinClient {
     /// Returns `None` on first visit; otherwise reconstructs the signer
     /// from the persisted seed and the cert from its wire bytes (no NDNCERT
     /// round-trip).
-    pub async fn try_restore(&mut self) -> Result<Option<JoinedIdentityInfo>, JsValue> {
+    pub async fn try_restore(&mut self) -> Result<Option<EnrolledIdentityInfo>, JsValue> {
         let names = self
             .pib
             .list_safebags()
             .await
             .map_err(|e: IdbPibError| JsValue::from_str(&format!("list_safebags: {e}")))?;
         let Some(key_name) = names.into_iter().next() else {
-            join_log("no cached identity in IdbPib");
+            enroll_log("no cached identity in IdbPib");
             return Ok(None);
         };
 
@@ -84,7 +84,7 @@ impl JoinClient {
             .await
             .map_err(|e| JsValue::from_str(&format!("get_safebag: {e}")))?
             .ok_or_else(|| {
-                JsValue::from_str("PIB indexed key has no SafeBag; call forget() then re-join")
+                JsValue::from_str("PIB indexed key has no SafeBag; call forget() then re-enroll")
             })?;
         let pw = self
             .pib
@@ -93,7 +93,7 @@ impl JoinClient {
             .map_err(|e| JsValue::from_str(&format!("get_passphrase: {e}")))?
             .ok_or_else(|| {
                 JsValue::from_str(
-                    "PIB has SafeBag but no passphrase; schema corruption — call forget() then re-join",
+                    "PIB has SafeBag but no passphrase; schema corruption — call forget() then re-enroll",
                 )
             })?;
         let seed = bag
@@ -106,9 +106,9 @@ impl JoinClient {
         let cert_name = cert_data.name.to_string();
 
         self.signer = Some(signer);
-        join_log(&format!("restored from IdbPib: {cert_name}"));
+        enroll_log(&format!("restored from IdbPib: {cert_name}"));
 
-        Ok(Some(JoinedIdentityInfo {
+        Ok(Some(EnrolledIdentityInfo {
             cert_name,
             restored: true,
         }))
@@ -117,13 +117,13 @@ impl JoinClient {
     /// Dial `host_url` (WebTransport), run NDNCERT against `ca_prefix`
     /// with the token challenge, persist the result. A random identity is
     /// minted under `identity_name_prefix`.
-    pub async fn join(
+    pub async fn enroll_via(
         &mut self,
         host_url: String,
         ca_prefix: String,
         identity_name_prefix: String,
         token: String,
-    ) -> Result<JoinedIdentityInfo, JsValue> {
+    ) -> Result<EnrolledIdentityInfo, JsValue> {
         let runtime = default_runtime();
 
         let engine = Engine::connect(runtime, &host_url)
@@ -152,7 +152,7 @@ impl JoinClient {
             .parse()
             .map_err(|_| JsValue::from_str("bad ca_prefix"))?;
 
-        join_log(&format!(
+        enroll_log(&format!(
             "enrolling under {identity_name} via token challenge"
         ));
         let signer_dyn: Arc<dyn Signer> = signer.clone();
@@ -168,11 +168,11 @@ impl JoinClient {
         self.persist(&key_name, &seed, &identity).await?;
 
         let cert_name = identity.cert_name.to_string();
-        join_log(&format!("joined: {cert_name}"));
+        enroll_log(&format!("enrolled: {cert_name}"));
 
         self.engine = Some(engine);
         self.signer = Some(signer);
-        Ok(JoinedIdentityInfo {
+        Ok(EnrolledIdentityInfo {
             cert_name,
             restored: false,
         })
@@ -211,7 +211,7 @@ impl JoinClient {
 
         // Write bag before passphrase: if the passphrase put fails,
         // `try_restore` returns a schema-corruption error and prompts
-        // re-join rather than silently dropping the identity.
+        // re-enroll rather than silently dropping the identity.
         self.pib
             .put_safebag(key_name, &bag)
             .await
