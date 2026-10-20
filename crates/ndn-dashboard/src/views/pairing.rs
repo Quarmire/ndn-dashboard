@@ -171,8 +171,10 @@ pub fn Pairing() -> Element {
                                 min: "1",
                                 value: "{ttl_mins}",
                                 oninput: move |e| {
-                                    if let Ok(v) = e.value().parse::<u64>() {
-                                        if v >= 1 { ttl_mins.set(v); }
+                                    if let Ok(v) = e.value().parse::<u64>()
+                                        && v >= 1
+                                    {
+                                        ttl_mins.set(v);
                                     }
                                 },
                             }
