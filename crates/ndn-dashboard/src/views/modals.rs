@@ -66,9 +66,9 @@ impl BuildFaceEntry {
             BuildFaceKind::Unix => format!(
                 "Unix {}",
                 if self.path.is_empty() {
-                    "/run/nfd/nfd.sock"
+                    ManagementConfig::default().face_socket
                 } else {
-                    &self.path
+                    self.path.clone()
                 }
             ),
             BuildFaceKind::WebSocket => format!(
@@ -195,7 +195,7 @@ pub fn StartRouterModal(on_close: EventHandler<()>, config_toml: Signal<String>)
     let toml_preview = config_toml.read().clone();
     let has_config = !toml_preview.is_empty();
 
-    let mut bc_socket = use_signal(|| "/run/nfd/nfd.sock".to_string());
+    let mut bc_socket = use_signal(|| ManagementConfig::default().face_socket);
     let mut bc_cs_variant = use_signal(|| "lru".to_string());
     let mut bc_cs_cap = use_signal(|| 64u32);
     let mut bc_log_level = use_signal(|| "info".to_string());
@@ -210,7 +210,7 @@ pub fn StartRouterModal(on_close: EventHandler<()>, config_toml: Signal<String>)
     let mut bc_face_group = use_signal(|| "224.0.23.170".to_string());
     let mut bc_face_port = use_signal(|| 56363u16);
     let mut bc_face_iface = use_signal(String::new);
-    let mut bc_face_path = use_signal(|| "/run/nfd/nfd.sock".to_string());
+    let mut bc_face_path = use_signal(|| ManagementConfig::default().face_socket);
     let mut bc_face_ws_url = use_signal(String::new);
     let mut bc_route_prefix = use_signal(String::new);
     let mut bc_route_face = use_signal(|| 0u32);
@@ -1147,7 +1147,7 @@ pub fn StartRouterModal(on_close: EventHandler<()>, config_toml: Signal<String>)
                                 div { style: "font-size:12px;color:var(--text);line-height:1.8;",
                                     "• Content store: 64 MB LRU" br{}
                                     "• Best-route forwarding strategy" br{}
-                                    "• Management socket: /run/nfd/nfd.sock" br{}
+                                    "• Management socket: {ManagementConfig::default().face_socket}" br{}
                                     "• Log level: INFO"
                                 }
                             }

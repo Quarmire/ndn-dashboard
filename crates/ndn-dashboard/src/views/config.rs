@@ -703,7 +703,11 @@ fn face_config_label(face: &FaceConfig) -> (&'static str, String) {
         ),
         FaceConfig::Unix { path } => (
             "Unix",
-            format!("path={}", path.as_deref().unwrap_or("/run/nfd/nfd.sock")),
+            format!(
+                "path={}",
+                path.clone()
+                    .unwrap_or_else(|| ManagementConfig::default().face_socket)
+            ),
         ),
         FaceConfig::WebSocket { bind, url } => (
             "WS",
@@ -752,7 +756,7 @@ fn FacesSection(faces: Signal<Vec<FaceConfig>>) -> Element {
     let mut add_group = use_signal(|| "224.0.23.170".to_string());
     let mut add_port = use_signal(|| "56363".to_string());
     let mut add_iface = use_signal(String::new);
-    let mut add_path = use_signal(|| "/run/nfd/nfd.sock".to_string());
+    let mut add_path = use_signal(|| ManagementConfig::default().face_socket);
     let mut add_ws_url = use_signal(String::new);
 
     let n_faces = faces.read().len();

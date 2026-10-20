@@ -1615,7 +1615,7 @@ fn dashboard_chain_dir_root() -> std::path::PathBuf {
 
 fn default_socket_path() -> String {
     #[cfg(windows)]
-    return r"\\.\pipe\ndn".to_string();
+    return ndn_config::ManagementConfig::default().face_socket;
     #[cfg(not(windows))]
     {
         crate::forwarder_profile::selected().1.display().to_string()
